@@ -191,12 +191,12 @@ namespace WpfGenerateHW
 
         private void fillIOController(Device device, IList<Controller._IoCard> controller)
         {
-            int index = 0;
+            int index = 1;
             DeviceItem rail = FindRail(device.DeviceItems);
             foreach(var card in controller)
             {
                 if (card.name.Equals(string.Empty)) continue;
-                for(int i = index; i < controller.Count; i++)
+                for(int i = index; i <= controller.Count; i++)
                 {
                     if (!rail.CanPlugNew("OrderNumber:" + ObjectIdentifier.Identifier[card.identifier], card.name + "_" + card.position, i)) continue;
                     index = i;
