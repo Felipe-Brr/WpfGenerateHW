@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -74,38 +75,46 @@ namespace WpfGenerateHW
 
         private void GenerateDevice()
         {
-            if(Directory.Exists(tbPath.Text + tbPlcName.Text))
+            Dispatcher.Invoke(() =>
             {
-
-                try
+                if (Directory.Exists(tbPath.Text + tbPlcName.Text))
                 {
-                    if (cbDelete.IsChecked == true) 
+
+                    try
                     {
-                        Directory.Delete(tbPath.Text + tbPlcName.Text, true);
-                        lbMessage.Items.Insert(0, DateTime.Now.ToString() + " Project" + tbPlcName.Name + " was deleted");
+                        if (cbDelete.IsChecked == true)
+                        {
+                            Directory.Delete(tbPath.Text + tbPlcName.Text, true);
+                            lbMessage.Items.Insert(0, DateTime.Now.ToString() + " Project" + tbPlcName.Name + " was deleted");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        lbMessage.Items.Insert(0, DateTime.Now.ToString() + " " + ex.Message);
                     }
                 }
-                catch (Exception ex) 
-                {
-                    lbMessage.Items.Insert(0, DateTime.Now.ToString() + " " + ex.Message);
-                }
-            }
-
+            });
 
             using (portal = new TiaPortal(TiaPortalMode.WithUserInterface))
             {
-                path = new DirectoryInfo(tbPath.Text);
-
-                project = portal.Projects.Create(path, tbPlcName.Text);
-                lbMessage.Items.Insert(0, DateTime.Now.ToString() + " Project" + project.Name + " was created");
+                Dispatcher.Invoke(() => 
+                {
+                    path = new DirectoryInfo(tbPath.Text);
+                    project = portal.Projects.Create(path, tbPlcName.Text);
+                    lbMessage.Items.Insert(0, DateTime.Now.ToString() + " Project" + project.Name + " was created");
+                });
 
                 IoDevice(Controller.Devices);
                 createDevices(project);
 
                 foreach(var a in project.UngroupedDevicesGroup.Devices)
                 {
-                    FindAttributeSet(a.DeviceItems, "Author", tbPlcAuthor.Text);
-                    FindAttributeSet(a.DeviceItems, "Comment", tbComment.Text + " " + a.Name);
+                    Dispatcher.Invoke(() =>
+                    {
+                        FindAttributeSet(a.DeviceItems, "Author", tbPlcAuthor.Text);
+                        FindAttributeSet(a.DeviceItems, "Comment", tbComment.Text + " " + a.Name);
+                    });
+                    
                 }
 
                 AddToSubnet(Controller.Devices, system);
@@ -118,35 +127,42 @@ namespace WpfGenerateHW
             Devices = new List<Device>();
             NetworkInterface network = null;
 
-
-            add = new addDevice
+            Dispatcher.Invoke(() =>
             {
-                name = tbIHMName.Text,
-                author = tbIHMAuthor.Text,
-                ipAddress = tbIHMIPAddress.Text,
-                identifier = tbIHMIdentifier.Text,
-                comment = tbComment.Text,
-            };
-            addDev.Add(add);
+                add = new addDevice
+                {
+                    name = tbIHMName.Text,
+                    author = tbIHMAuthor.Text,
+                    ipAddress = tbIHMIPAddress.Text,
+                    identifier = tbIHMIdentifier.Text,
+                    comment = tbComment.Text,
+                };
+                addDev.Add(add);
 
-            add = new addDevice
-            {
-                name = tbPlcName.Text,
-                author = tbPlcAuthor.Text,
-                ipAddress = tbPlcIPAddress.Text,
-                identifier = tbPlcIdentifier.Text,
-                comment = tbComment.Text,
-            };
-            addDev.Add(add);
+                add = new addDevice
+                {
+                    name = tbPlcName.Text,
+                    author = tbPlcAuthor.Text,
+                    ipAddress = tbPlcIPAddress.Text,
+                    identifier = tbPlcIdentifier.Text,
+                    comment = tbComment.Text,
+                };
+                addDev.Add(add);
+            });
 
-            foreach(var a in addDev)
+            foreach (var a in addDev)
             {
                 var device = project.Devices.CreateWithItem("OrderNumber:" + ObjectIdentifier.Identifier[a.identifier], a.name, a.name);
                 Devices.Add(device);
-                lbMessage.Items.Insert(0, DateTime.Now.ToString() + " Device " + device.Name + " was created");
 
-                FindAttributeSet(device.DeviceItems, "Author", tbPlcAuthor.Text);
-                FindAttributeSet(device.DeviceItems, "Comment", tbComment.Text + " " + device.Name);
+                Dispatcher.Invoke(() =>
+                {
+                    lbMessage.Items.Insert(0, DateTime.Now.ToString() + " Device " + device.Name + " was created");
+
+                    FindAttributeSet(device.DeviceItems, "Author", tbPlcAuthor.Text);
+                    FindAttributeSet(device.DeviceItems, "Comment", tbComment.Text + " " + device.Name);
+                });
+                
 
                 network = FindNetworkInterface(device.DeviceItems);
                 network.Nodes.Last().ConnectToSubnet(project.Subnets.Find("GlobalNetwork"));
@@ -165,7 +181,7 @@ namespace WpfGenerateHW
             if(project != null)
             {
                 project.Save();
-                lbMessage.Items.Insert(0, DateTime.Now.ToString() + " Project" + project.Name + " was saved");
+                Dispatcher.Invoke(() => lbMessage.Items.Insert(0, DateTime.Now.ToString() + " Project" + project.Name + " was saved"));
             }
         }
 
@@ -178,9 +194,12 @@ namespace WpfGenerateHW
             {
                 var device = project.UngroupedDevicesGroup.Devices.CreateWithItem("OrderNumber:" + ObjectIdentifier.Identifier[d.Item1.identifier], d.Item1.name, d.Item1.name);
                 subdevice.Add(device);
-
-                FindAttributeSet(device.DeviceItems, "Author", tbPlcAuthor.Text);
-                FindAttributeSet(device.DeviceItems, "Comment", tbComment.Text + " " + device.Name);
+                Dispatcher.Invoke(() =>
+                {
+                    FindAttributeSet(device.DeviceItems, "Author", tbPlcAuthor.Text);
+                    FindAttributeSet(device.DeviceItems, "Comment", tbComment.Text + " " + device.Name);
+                });
+                
 
 
                 fillIOController(device, d.Item2);
@@ -210,7 +229,8 @@ namespace WpfGenerateHW
         {
             foreach(var d in project.UngroupedDevicesGroup.Devices)
             {
-                if (d.Name.Contains(tbPlcName.Text)) continue;
+                var plcName = Dispatcher.Invoke(() => tbPlcName.Text);
+                if (d.Name.Contains(plcName)) continue;
 
                 var network = FindNetworkInterface(d.DeviceItems);
                 network.IoConnectors.Last().ConnectToIoSystem(system);
@@ -289,9 +309,9 @@ namespace WpfGenerateHW
         #endregion
 
         #region Events
-        private void btnGenHw_Click(object sender, RoutedEventArgs e)
+        private async void btnGenHw_Click(object sender, RoutedEventArgs e)
         {
-            GenerateDevice();
+            await Task.Run(GenerateDevice);
         }
 
         private void btnReloadCsv_Click(object sender, RoutedEventArgs e)

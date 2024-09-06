@@ -69,5 +69,15 @@ namespace WpfGenerateHW.Properties {
                 return ((System.Drawing.Icon)(obj));
             }
         }
+        
+        /// <summary>
+        ///   Consulta um recurso localizado do tipo System.Drawing.Icon semelhante a (Ícone).
+        /// </summary>
+        internal static System.Drawing.Icon Partnner_M {
+            get {
+                object obj = ResourceManager.GetObject("Partnner_M", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
+            }
+        }
     }
 }

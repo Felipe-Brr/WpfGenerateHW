@@ -109,5 +109,8 @@
   <ItemGroup>
     <None Include="Resources\Partnner.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\Partnner_M.ico" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
